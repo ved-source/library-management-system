@@ -184,7 +184,7 @@ void handle_display_catalog(Database& db) {
 }
 
 int main() {
-    Database db("books.csv", "members.csv", "loans.csv");
+    Database db("library.db");
     LibrarySystem system(db);
 
     std::cout << "==================================================\n";

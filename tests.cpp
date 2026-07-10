@@ -4,16 +4,14 @@
 #include "Database.h"
 #include "LibrarySystem.h"
 
-// Define a test macro or function to clean temporary CSV files on startup
+// Define a test macro or function to clean temporary SQL db file on startup
 void reset_test_databases() {
-    std::remove("test_books.csv");
-    std::remove("test_members.csv");
-    std::remove("test_loans.csv");
+    std::remove("test_library.db");
 }
 
 void test_add_and_search_books() {
     reset_test_databases();
-    Database db("test_books.csv", "test_members.csv", "test_loans.csv");
+    Database db("test_library.db");
     LibrarySystem system(db);
 
     system.add_book("TC-001", "111-222", "Object Oriented Design", "Grady Booch");
@@ -39,7 +37,7 @@ void test_add_and_search_books() {
 
 void test_register_member() {
     reset_test_databases();
-    Database db("test_books.csv", "test_members.csv", "test_loans.csv");
+    Database db("test_library.db");
     LibrarySystem system(db);
 
     system.register_member("M-01", "Alice", "alice@test.com");
@@ -60,7 +58,7 @@ void test_register_member() {
 
 void test_borrow_and_return_book() {
     reset_test_databases();
-    Database db("test_books.csv", "test_members.csv", "test_loans.csv");
+    Database db("test_library.db");
     LibrarySystem system(db);
 
     system.add_book("TC-001", "123", "Clean Code", "Robert Martin");
@@ -96,7 +94,7 @@ void test_borrow_and_return_book() {
 
 void test_borrow_limit_exceeded() {
     reset_test_databases();
-    Database db("test_books.csv", "test_members.csv", "test_loans.csv");
+    Database db("test_library.db");
     LibrarySystem system(db);
 
     system.register_member("M-01", "Alice", "alice@test.com");
@@ -125,12 +123,12 @@ void test_borrow_limit_exceeded() {
 }
 
 int main() {
-    std::cout << "=== RUNNING C++ LIBRARY MANAGEMENT SYSTEM UNIT TESTS ===\n";
+    std::cout << "=== RUNNING C++ LIBRARY MANAGEMENT SYSTEM SQL UNIT TESTS ===\n";
     test_add_and_search_books();
     test_register_member();
     test_borrow_and_return_book();
     test_borrow_limit_exceeded();
-    std::cout << "All unit tests completed successfully!\n";
+    std::cout << "All SQL unit tests completed successfully!\n";
     reset_test_databases(); // Cleanup test files
     return 0;
 }

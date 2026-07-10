@@ -5,29 +5,27 @@
 #include <string>
 #include "Models.h"
 
+// Forward declaration to avoid exposing sqlite3 headers to clients
+struct sqlite3;
+
 class Database {
 private:
-    std::string books_file;
-    std::string members_file;
-    std::string loans_file;
+    sqlite3* db_handle;
+    std::string db_file;
 
-    // Helper functions for CSV parsing
-    std::vector<std::string> parse_csv_line(const std::string& line);
-    std::string escape_csv(const std::string& field);
+    void initialize_database();
 
 public:
     std::vector<Book> books;
     std::vector<Member> members;
     std::vector<Loan> loans;
 
-    Database(std::string books_path = "books.csv", 
-             std::string members_path = "members.csv", 
-             std::string loans_path = "loans.csv");
+    Database(std::string db_path = "library.db");
+    ~Database();
 
     void load_data();
-    void save_data();
 
-    // Query helpers simulating database transactions
+    // Query helpers executing SQL statements
     void insert_book(const Book& book);
     void insert_member(const Member& member);
     void insert_loan(const Loan& loan);
