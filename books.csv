@@ -1,0 +1,5 @@
+barcode,isbn,title,author,is_issued
+BC-001,978-0132350884,Clean Code,Robert C. Martin,0
+BC-002,978-0132350884,Clean Code,Robert C. Martin,0
+BC-003,978-0134494166,Design Patterns: Elements of Reusable Object-Oriented Software,Erich Gamma,0
+BC-004,978-0135957059,The Pragmatic Programmer,Andy Hunt,0

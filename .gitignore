@@ -9,3 +9,10 @@ htmlcov/
 venv/
 .venv
 ENV/
+# C++ Build Output
+*.exe
+*.o
+*.obj
+*.out
+library_simulator
+test_runner

@@ -1,163 +1,124 @@
-# Library Management System (Low-Level Design)
+# Library Management System (C++ Implementation)
 
-An elegant, object-oriented, and SOLID-compliant Python implementation of a **Library Management System** for modeling real-world library operations.
+A clean, modular, and SOLID-compliant C++ implementation of a **Library Management System** featuring a flat-file relational CSV database engine.
 
 ---
 
 ## 1. Project Overview & Problem Statement
-The objective is to design and implement a robust, extensible Library Management System that models library domains:
-- Adding and managing books and physical book copies in the catalog.
-- Registering and managing library members.
-- Tracking availability of copies (Available, Issued, Lost) and preventing issuing unavailable copies.
-- Permitting members to borrow and return books while enforcing policy constraints (e.g., maximum borrowing limits).
+The objective is to implement a robust, lightweight Library Management System using C++ standard libraries:
+- Register and manage members in the system.
+- Manage books and physical copies in the library catalog.
+- Support book checkout (issue) and return transactions.
+- Enforce business logic constraints (e.g. max borrow limits of 5 books per member, preventing checkout of already issued copies).
+- Persist state reliably across sessions using a flat-file relational CSV storage layer.
 
 ---
 
-## 2. High-Level Explanation of the Design
+## 2. High-Level Architecture Design
 
-This system leverages core **Object-Oriented Programming (OOP)** and **SOLID** principles to ensure readability, testability, and extensibility.
+This system separates responsibilities into three logical layers:
 
 ```mermaid
 classDiagram
     direction TB
     class Book {
-        +String isbn
-        +String title
-        +String author
-        +int publication_year
-    }
-    class BookCopy {
-        +String barcode
-        +Book book
-        +BookStatus status
-        +is_available() bool
-        +issue()
-        +return_copy()
+        +string barcode
+        +string isbn
+        +string title
+        +string author
+        +bool is_issued
     }
     class Member {
-        +String member_id
-        +String name
-        +String email
-        +datetime joined_date
+        +string id
+        +string name
+        +string email
     }
-    class BookLending {
-        +String lending_id
-        +BookCopy copy
-        +Member member
-        +datetime issued_date
-        +datetime due_date
-        +datetime returned_date
-        +is_active() bool
-        +complete_lending()
+    class Loan {
+        +string loan_id
+        +string member_id
+        +string barcode
+        +string issue_date
+        +string due_date
+        +bool is_returned
     }
-    class Catalog {
-        -Dict books
-        -Dict copies
-        +add_book(Book)
-        +add_copy(BookCopy)
-        +get_copy(String barcode) BookCopy
-        +search_books(SearchStrategy, String query) List
+    class Database {
+        +vector~Book~ books
+        +vector~Member~ members
+        +vector~Loan~ loans
+        +load_data()
+        +save_data()
+        +insert_book(Book)
+        +insert_member(Member)
+        +insert_loan(Loan)
+        +update_book_status(string, bool)
+        +mark_loan_returned(string, string)
     }
-    class MemberRegistry {
-        -Dict members
-        +register_member(Member)
-        +get_member(String id) Member
-    }
-    class LendingService {
-        -Catalog catalog
-        -MemberRegistry registry
-        -Dict lendings
-        +borrow_book(member_id, barcode) BookLending
-        +return_book(member_id, barcode) BookLending
-    }
-    class LibraryFacade {
-        +Catalog catalog
-        +MemberRegistry registry
-        +LendingService lending_service
-        +borrow_book()
+    class LibrarySystem {
+        -Database& db
+        +add_book()
+        +register_member()
+        +borrow_book() Loan
         +return_book()
-        +search_by_title()
-        +search_by_author()
-        +search_by_isbn()
+        +search_by_title() vector
+        +search_by_author() vector
+        +search_by_isbn() vector
     }
 
-    BookCopy "*" --> "1" Book : references
-    BookLending "1" --> "1" BookCopy : borrows
-    BookLending "1" --> "1" Member : borrower
-    Catalog "1" --> "*" BookCopy : manages
-    MemberRegistry "1" --> "*" Member : manages
-    LendingService "1" --> "1" Catalog : uses
-    LendingService "1" --> "1" MemberRegistry : uses
-    LendingService "1" --> "*" BookLending : tracks
-    LibraryFacade "1" --> "1" Catalog
-    LibraryFacade "1" --> "1" MemberRegistry
-    LibraryFacade "1" --> "1" LendingService
+    Database "1" --> "*" Book : stores
+    Database "1" --> "*" Member : stores
+    Database "1" --> "*" Loan : stores
+    LibrarySystem "1" --> "1" Database : queries & updates
 ```
 
-### Application of SOLID Principles
+### Relational Database Simulation (SQL over CSV)
+Rather than introducing heavy SQL database engines, this system mimics relational structures using standard CSV files:
+*   `books.csv` (Book Table: barcode (PK), isbn, title, author, is_issued)
+*   `members.csv` (Member Table: id (PK), name, email)
+*   `loans.csv` (Loan Table: loan_id (PK), member_id (FK), barcode (FK), issue_date, due_date, is_returned)
 
-*   **Single Responsibility Principle (SRP):**
-    *   `Book`, `BookCopy`, and `Member` act strictly as domain data entities.
-    *   `Catalog` and `MemberRegistry` are dedicated repositories managing data storage & search.
-    *   `LendingService` isolates all business workflow rules (like validation, limits, and transactions).
-*   **Open/Closed Principle (OCP):**
-    *   The search system uses the **Strategy Pattern** via the abstract class `SearchStrategy` (`search.py`). We can introduce new search algorithms (e.g., search by category, language) by adding classes without modifying the `Catalog` or existing search classes.
-*   **Liskov Substitution Principle (LSP):**
-    *   All concrete implementations of `SearchStrategy` (`SearchByTitle`, `SearchByAuthor`, `SearchByIsbn`) can be substituted transparently in `Catalog.search_books(...)` without changing its execution logic.
-*   **Interface Segregation Principle (ISP):**
-    *   The catalog client only interacts with the methods they need. The search interface is minimal and contains only a single `search()` method.
-*   **Dependency Inversion Principle (DIP):**
-    *   High-level workflows in the `Catalog` search delegate directly to the `SearchStrategy` abstraction rather than concrete search helper implementations.
-
-### Design Patterns Used
-1.  **Strategy Pattern**: Used to encapsulate book search strategies (Title, Author, ISBN) dynamically at runtime.
-2.  **Facade Pattern**: The `LibraryFacade` class acts as a single unified interface to the system, concealing the complexity of catalog management, member registries, and lending workflows.
+The `Database` class simulates query interfaces (Inserts, Updates, Selects) and atomic updates to flat files, ensuring reliability and durability.
 
 ---
 
-## 3. Key Classes & Responsibilities
-
-| Class | File | Responsibility |
-|---|---|---|
-| `Book` | `models.py` | Encapsulates metadata (Title, Author, ISBN, Year) of a book. |
-| `BookCopy` | `models.py` | Represents a physical copy with a barcode and tracks its status (`AVAILABLE`, `ISSUED`, `LOST`). |
-| `Member` | `models.py` | Represents a registered reader with an ID, name, and contact details. |
-| `BookLending` | `models.py` | Stores the transaction details of a borrow transaction (Dates, Member, Copy). |
-| `Catalog` | `services.py` | Manages active books/copies collection and supports strategy-based searching. |
-| `MemberRegistry` | `services.py` | Manages membership registration database. |
-| `LendingService` | `services.py` | Orchestrates checkouts & check-ins, validation rules, and active loan constraints. |
-| `LibraryFacade` | `main.py` | Unified entry point for clients interacting with the library. |
-| `SearchStrategy` | `search.py` | Abstract class defining the search contract for books. |
-
----
-
-## 4. Project Structure
+## 3. Project Structure
 ```text
 library_management_system/
-├── models.py         # Entities (Book, BookCopy, Member, BookLending, BookStatus)
-├── services.py       # Repositories & core business logic (Catalog, MemberRegistry, LendingService)
-├── search.py         # Strategy Pattern implementations for book search
-├── exceptions.py     # Custom exceptions handling business domain constraints
-├── test_library.py   # Unit testing suite for all modules and scenarios
-├── main.py           # Facade wrapper and a fully interactive LLD CLI demo
-└── README.md         # Design documentation (this file)
+├── Models.h           # Core domain entity structs (Book, Member, Loan)
+├── Database.h         # Database storage manager declaration
+├── Database.cpp       # Database file loading/saving and transaction updates
+├── LibrarySystem.h    # Business rules, validation, and search service declaration
+├── LibrarySystem.cpp  # Library validation constraints and search implementation
+├── main.cpp           # Main interactive console simulator
+├── tests.cpp          # Automated unit testing suite
+├── books.csv          # Sample populated Book table
+├── members.csv        # Sample populated Member table
+├── loans.csv          # Loan transactions table
+└── README.md          # Project design documentation (this file)
 ```
 
 ---
 
-## 5. Setup & Running the Project
+## 4. Compile & Run Instructions
 
 ### Prerequisites
-- Python 3.8+ (tested on Python 3.11.x)
+- GCC / G++ compiler supporting C++11 (like MinGW on Windows or standard g++ on Linux).
 
-### Running the Demonstration CLI
-Execute the demo script to verify all functional requirements and test scenarios (including book registration, member registration, search strategies, limits, and borrow/return workflows):
+### Running the Simulator
+Compile all source files and execute the compiled binary to open the interactive menu:
 ```bash
-python main.py
+# Compile
+g++ -std=c++11 Database.cpp LibrarySystem.cpp main.cpp -o library_simulator.exe
+
+# Run
+.\library_simulator.exe
 ```
 
-### Running Unit Tests
-To run the automated test suite verifying edge cases, exceptions, and core functionality:
+### Running the Unit Tests
+Compile and run the test suite to verify core business logic constraints (checkout limits, book availability, search functions, etc.):
 ```bash
-python -m unittest test_library.py
+# Compile
+g++ -std=c++11 Database.cpp LibrarySystem.cpp tests.cpp -o test_runner.exe
+
+# Run
+.\test_runner.exe
 ```
