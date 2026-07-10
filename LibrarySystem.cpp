@@ -6,7 +6,6 @@
 #include <algorithm>
 
 LibrarySystem::LibrarySystem(Database& database) : db(database) {
-    // Initialize loan_counter based on existing loans size
     loan_counter = db.loans.size();
 }
 
@@ -36,7 +35,6 @@ std::string LibrarySystem::get_due_date(int days) {
 
 void LibrarySystem::add_book(const std::string& barcode, const std::string& isbn, 
                              const std::string& title, const std::string& author) {
-    // Check if barcode already exists
     for (const auto& b : db.books) {
         if (b.barcode == barcode) {
             throw std::runtime_error("Book with barcode '" + barcode + "' already exists.");
@@ -53,35 +51,31 @@ void LibrarySystem::add_book(const std::string& barcode, const std::string& isbn
     db.insert_book(b);
 }
 
-void LibrarySystem::register_member(const std::string& id, const std::string& name, 
-                                     const std::string& email) {
+void LibrarySystem::register_member(const std::string& type, const std::string& id, 
+                                     const std::string& name, const std::string& email) {
     // Check if member already exists
-    for (const auto& m : db.members) {
-        if (m.id == id) {
+    for (const auto* m : db.members) {
+        if (m->get_id() == id) {
             throw std::runtime_error("Member with ID '" + id + "' already registered.");
         }
     }
 
-    Member m;
-    m.id = id;
-    m.name = name;
-    m.email = email;
-
-    db.insert_member(m);
+    // Factory Pattern: Create temporary member object
+    Member* temp_member = MemberFactory::create_member(type, id, name, email);
+    db.insert_member(temp_member);
+    delete temp_member; // Clean up temporary object
 }
 
 Loan LibrarySystem::borrow_book(const std::string& member_id, const std::string& barcode) {
     // 1. Validate member exists
-    bool member_exists = false;
-    Member borrower;
-    for (const auto& m : db.members) {
-        if (m.id == member_id) {
-            member_exists = true;
+    Member* borrower = nullptr;
+    for (auto* m : db.members) {
+        if (m->get_id() == member_id) {
             borrower = m;
             break;
         }
     }
-    if (!member_exists) {
+    if (!borrower) {
         throw std::runtime_error("Member not found with ID '" + member_id + "'.");
     }
 
@@ -102,9 +96,12 @@ Loan LibrarySystem::borrow_book(const std::string& member_id, const std::string&
         throw std::runtime_error("Book '" + copy.title + "' is currently issued.");
     }
 
-    // 3. Validate borrow limits
-    if (get_active_loans_count(member_id) >= MAX_BORROW_LIMIT) {
-        throw std::runtime_error("Borrow limit of " + std::to_string(MAX_BORROW_LIMIT) + " reached for member '" + borrower.name + "'.");
+    // 3. Validate borrow limits using Polymorphism
+    int active_loans = get_active_loans_count(member_id);
+    int limit = borrower->get_borrow_limit();
+    if (active_loans >= limit) {
+        throw std::runtime_error("Borrow limit of " + std::to_string(limit) + " reached for " +
+                                 borrower->get_member_type() + " member '" + borrower->get_name() + "'.");
     }
 
     // 4. Create Loan
@@ -113,7 +110,7 @@ Loan LibrarySystem::borrow_book(const std::string& member_id, const std::string&
     l.member_id = member_id;
     l.barcode = barcode;
     l.issue_date = get_current_date();
-    l.due_date = get_due_date(DEFAULT_LOAN_DAYS);
+    l.due_date = get_due_date(LibrarySystem::DEFAULT_LOAN_DAYS);
     l.is_returned = false;
 
     db.insert_loan(l);
@@ -207,9 +204,9 @@ Book LibrarySystem::get_book_by_barcode(const std::string& barcode) {
     throw std::runtime_error("Book not found.");
 }
 
-Member LibrarySystem::get_member_by_id(const std::string& id) {
-    for (const auto& m : db.members) {
-        if (m.id == id) return m;
+Member* LibrarySystem::get_member_by_id(const std::string& id) {
+    for (auto* m : db.members) {
+        if (m->get_id() == id) return m;
     }
     throw std::runtime_error("Member not found.");
 }

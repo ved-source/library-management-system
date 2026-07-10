@@ -14,5 +14,10 @@ ENV/
 *.o
 *.obj
 *.out
-library_simulator
-test_runner
+# SQLite Databases
+*.db
+library.db
+test_library.db
+
+# Build Directory
+build/

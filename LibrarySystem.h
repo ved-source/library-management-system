@@ -15,7 +15,6 @@ private:
     std::string get_due_date(int days);
 
 public:
-    static const int MAX_BORROW_LIMIT = 5;
     static const int DEFAULT_LOAN_DAYS = 14;
 
     LibrarySystem(Database& database);
@@ -24,8 +23,9 @@ public:
     void add_book(const std::string& barcode, const std::string& isbn, 
                   const std::string& title, const std::string& author);
                   
-    void register_member(const std::string& id, const std::string& name, 
-                         const std::string& email);
+    // Updated to support polymorphic member type registration
+    void register_member(const std::string& type, const std::string& id, 
+                         const std::string& name, const std::string& email);
 
     Loan borrow_book(const std::string& member_id, const std::string& barcode);
     
@@ -40,7 +40,9 @@ public:
     int get_active_loans_count(const std::string& member_id);
     std::vector<Loan> get_member_active_loans(const std::string& member_id);
     Book get_book_by_barcode(const std::string& barcode);
-    Member get_member_by_id(const std::string& id);
+    
+    // Updated to return polymorphic pointer rather than value copy to prevent object slicing
+    Member* get_member_by_id(const std::string& id);
 };
 
 #endif // LIBRARY_SYSTEM_H

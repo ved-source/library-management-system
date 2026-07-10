@@ -13,21 +13,31 @@ private:
     sqlite3* db_handle;
     std::string db_file;
 
-    void initialize_database();
-
-public:
-    std::vector<Book> books;
-    std::vector<Member> members;
-    std::vector<Loan> loans;
-
-    Database(std::string db_path = "library.db");
+    // Singleton Pattern: Private constructor and destructor
+    Database(std::string db_path);
     ~Database();
 
+    // Prevent copying
+    Database(const Database&) = delete;
+    Database& operator=(const Database&) = delete;
+
+    void initialize_database();
+    void seed_data(); // Automatically seed database if empty
+
+public:
+    // Singleton Accessor
+    static Database& get_instance(std::string db_path = "library.db");
+
+    std::vector<Book> books;
+    std::vector<Member*> members; // Polymorphic pointers
+    std::vector<Loan> loans;
+
     void load_data();
+    void clear_members(); // Cleanup polymorphic pointers
 
     // Query helpers executing SQL statements
     void insert_book(const Book& book);
-    void insert_member(const Member& member);
+    void insert_member(const Member* member);
     void insert_loan(const Loan& loan);
     void update_book_status(const std::string& barcode, bool is_issued);
     void mark_loan_returned(const std::string& member_id, const std::string& barcode);

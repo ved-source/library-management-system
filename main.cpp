@@ -43,7 +43,11 @@ void handle_add_book(LibrarySystem& system) {
 void handle_register_member(LibrarySystem& system) {
     print_separator();
     std::cout << "[REGISTER NEW MEMBER]\n";
-    std::string id, name, email;
+    std::string id, name, email, type;
+    
+    std::cout << "Enter Member Type (Student/Faculty): ";
+    std::cin >> type;
+    clear_input();
     
     std::cout << "Enter Member ID: ";
     std::cin >> id;
@@ -55,9 +59,15 @@ void handle_register_member(LibrarySystem& system) {
     std::cout << "Enter Email Address: ";
     std::getline(std::cin, email);
 
+    // Validate type input
+    if (type != "Student" && type != "Faculty") {
+        std::cout << "\n>>> Error: Invalid type. Defaulting to 'Student'.\n";
+        type = "Student";
+    }
+
     try {
-        system.register_member(id, name, email);
-        std::cout << "\n>>> Success: Member registered successfully.\n";
+        system.register_member(type, id, name, email);
+        std::cout << "\n>>> Success: " << type << " Member registered successfully.\n";
     } catch (const std::exception& e) {
         std::cout << "\n>>> Error: " << e.what() << "\n";
     }
@@ -154,13 +164,15 @@ void handle_view_member(LibrarySystem& system) {
     clear_input();
 
     try {
-        Member m = system.get_member_by_id(member_id);
+        Member* m = system.get_member_by_id(member_id);
         std::cout << "\nMember Details:\n";
-        std::cout << "  Name  : " << m.name << "\n";
-        std::cout << "  Email : " << m.email << "\n";
+        std::cout << "  Name  : " << m->get_name() << "\n";
+        std::cout << "  Email : " << m->get_email() << "\n";
+        std::cout << "  Type  : " << m->get_member_type() << "\n";
+        std::cout << "  Fine  : $" << m->get_fine_rate() << "/day\n";
 
         auto active_loans = system.get_member_active_loans(member_id);
-        std::cout << "\nActive Borrowings (" << active_loans.size() << "/" << LibrarySystem::MAX_BORROW_LIMIT << "):\n";
+        std::cout << "\nActive Borrowings (" << active_loans.size() << "/" << m->get_borrow_limit() << "):\n";
         for (const auto& l : active_loans) {
             Book b = system.get_book_by_barcode(l.barcode);
             std::cout << "  - [" << l.barcode << "] \"" << b.title << "\" (Issued: " << l.issue_date << ", Due: " << l.due_date << ")\n";
@@ -184,7 +196,8 @@ void handle_display_catalog(Database& db) {
 }
 
 int main() {
-    Database db("library.db");
+    // Singleton Access
+    Database& db = Database::get_instance("library.db");
     LibrarySystem system(db);
 
     std::cout << "==================================================\n";
