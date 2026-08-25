@@ -1,6 +1,6 @@
 # Library Management System (C++ & SQLite3 Flagship Implementation)
 
-A clean, modular,C++ implementation of a **Library Management System** demonstrating advanced OOP concepts, design patterns, and automated database persistence.
+A clean and modular C++ implementation of a **Library Management System** demonstrating advanced OOP concepts, design patterns, and automated database persistence.
 
 ---
 
